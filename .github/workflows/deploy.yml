@@ -16,6 +16,7 @@ jobs:
           host: ${{ secrets.AWS_HOST_IP }}
           username: ubuntu
           key: ${{ secrets.AWS_SSH_KEY }}
+          command_timeout: 30m
           script: |
             # Go into the project folder (or clone it if first time)
             if [ ! -d "logistics_ai" ]; then
