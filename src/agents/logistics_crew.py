@@ -48,7 +48,7 @@ if not _SERPER_API_KEY:
 # ---------------------------------------------------------------------------
 
 os.environ["GEMINI_API_KEY"] = _GOOGLE_API_KEY
-llm = "gemini/gemini-1.0-pro"
+llm = "gemini/gemini-1.5-flash"
 
 # ---------------------------------------------------------------------------
 # 2. Search Tools
@@ -77,6 +77,7 @@ def _build_agents():
 
     analyst = Agent(
         role="Senior Logistics Analyst",
+        model="gemini-1.5-flash",
         goal=(
             "Autonomously search the web to find authoritative, current intelligence "
             "on logistics KPIs, freight rate indices, supply chain disruptions, port "
@@ -105,6 +106,7 @@ def _build_agents():
 
     writer = Agent(
         role="Logistics Technical Writer",
+        model="gemini-1.5-flash",
         goal=(
             "Transform raw logistics research data into a polished, structured "
             "Markdown report that is immediately usable by supply chain planners "
