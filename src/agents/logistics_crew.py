@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 
 from crewai import Agent, Crew, Process, Task
 from crewai_tools import SerperDevTool
-from langchain_google_genai import ChatGoogleGenerativeAI
+
 
 # ---------------------------------------------------------------------------
 # 0. Environment
@@ -72,8 +72,7 @@ def _build_agents(model_override=None):
     """
     search_tools = _build_search_tools()
     
-    use_model = model_override or "gemini-1.5-flash"
-    llm = ChatGoogleGenerativeAI(model=use_model, verbose=True)
+    use_model = model_override or "gemini/gemini-1.5-flash"
 
     analyst = Agent(
         role="Senior Logistics Analyst",
@@ -96,7 +95,7 @@ def _build_agents(model_override=None):
             "When your first search returns insufficient data, you reformulate your "
             "query and try again rather than guessing."
         ),
-        llm=llm,
+        llm=use_model,
         tools=search_tools,
         verbose=True,
         allow_delegation=False,
@@ -106,7 +105,6 @@ def _build_agents(model_override=None):
 
     writer = Agent(
         role="Logistics Technical Writer",
-        model=use_model,
         goal=(
             "Transform raw logistics research data into a polished, structured "
             "Markdown report that is immediately usable by supply chain planners "
@@ -123,7 +121,7 @@ def _build_agents(model_override=None):
             "with [UNVERIFIED], and you proactively note data gaps so the reader "
             "knows exactly what is and is not confirmed."
         ),
-        llm=llm,
+        llm=use_model,
         tools=[],
         verbose=True,
         allow_delegation=False,
@@ -247,11 +245,11 @@ def run_research(query: str, output_file: str) -> str:
     max_retries = 4
     base_delay = 2.0
     models_to_try = [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash",
-        "gemini-1.0-pro",  # Fallback to older model
-        "gemini-1.0-pro"
+        "gemini/gemini-1.5-flash",
+        "gemini/gemini-1.5-flash",
+        "gemini/gemini-1.5-flash",
+        "groq/llama3-8b-8192",  # Fast reliable fallback via Groq
+        "groq/llama3-8b-8192"
     ]
 
     for attempt in range(max_retries + 1):
