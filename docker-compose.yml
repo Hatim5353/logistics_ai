@@ -1,0 +1,13 @@
+services:
+  logistics-agent:
+    build: .
+    container_name: logistics-ai
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      # Persist reports and vector DB across container restarts
+      - ./knowledge_repo:/app/knowledge_repo
+      - ./chroma_db:/app/chroma_db
+    restart: unless-stopped

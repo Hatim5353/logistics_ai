@@ -1,0 +1,28 @@
+# Git
+.git
+.gitignore
+
+# Python
+.venv
+__pycache__
+*.pyc
+*.pyo
+
+# Environment (secrets — pass via docker run --env-file)
+.env
+
+# Runtime data (will be created inside the container)
+chroma_db/
+
+# IDE / Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Docs (not needed at runtime)
+docs/
+
+# OS
+Thumbs.db
+.DS_Store
