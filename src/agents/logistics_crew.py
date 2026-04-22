@@ -48,7 +48,7 @@ if not _SERPER_API_KEY:
 # ---------------------------------------------------------------------------
 
 os.environ["GEMINI_API_KEY"] = _GOOGLE_API_KEY
-llm = "gemini/gemini-1.5-flash"
+llm = "gemini/gemini-1.0-pro"
 
 # ---------------------------------------------------------------------------
 # 2. Search Tools

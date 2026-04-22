@@ -73,7 +73,7 @@ def query_local(question: str, k: int = 4) -> str:
     # FIX: was "gemini-2.5-flash" — corrected to "gemini-2.5-flash" to match
     # the model used throughout the rest of the project (logistics_crew.py).
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
+        model="gemini-1.0-pro",
         google_api_key=os.getenv("GOOGLE_API_KEY"),
         temperature=0.2,
         convert_system_message_to_human=True,
