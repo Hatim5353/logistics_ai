@@ -1010,7 +1010,7 @@ elif "Settings" in page:
     st.markdown("<div class='section-title'>ℹ️ Project Info</div>", unsafe_allow_html=True)
     info = {
         "Framework":   "CrewAI + LangChain",
-        "LLM":         "Gemini 2.5 Flash",
+        "LLM":         "Gemini 1.5 Flash",
         "Vector DB":   "ChromaDB (local)",
         "Embeddings":  "Google Embedding-001",
         "Reports Dir": "./knowledge_repo/",
