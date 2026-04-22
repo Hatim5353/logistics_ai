@@ -10,7 +10,12 @@ import time
 import streamlit as st
 
 from datetime import datetime
+from datetime import datetime
 from dotenv import load_dotenv
+
+import numpy as np
+if not hasattr(np, 'float_'):
+    np.float_ = np.float64
 
 # Disable ChromaDB telemetry as it can cause indefinite hanging on Windows loops
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
