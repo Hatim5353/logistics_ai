@@ -16,6 +16,8 @@ Usage
 """
 
 import os
+import time
+import random
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -43,12 +45,7 @@ if not _SERPER_API_KEY:
         "DuckDuckGo search was removed, so this key is required."
     )
 
-# ---------------------------------------------------------------------------
-# 1. LLM
-# ---------------------------------------------------------------------------
-
 os.environ["GEMINI_API_KEY"] = _GOOGLE_API_KEY
-llm = "gemini/gemini-1.5-flash"
 
 # ---------------------------------------------------------------------------
 # 2. Search Tools
@@ -67,17 +64,20 @@ def _build_search_tools() -> list:
 # 3. Agent factory  (built lazily inside run_research to avoid eager tool init)
 # ---------------------------------------------------------------------------
 
-def _build_agents():
+def _build_agents(model_override=None):
     """
     Instantiate agents with freshly-built search tools.
     Called once per run_research() invocation so tool init errors surface at
     runtime with a clear traceback rather than silently at import time.
     """
     search_tools = _build_search_tools()
+    
+    use_model = model_override or "gemini-1.5-flash"
+    llm = ChatGoogleGenerativeAI(model=use_model, verbose=True)
 
     analyst = Agent(
         role="Senior Logistics Analyst",
-        model="gemini-1.5-flash",
+        model=use_model,
         goal=(
             "Autonomously search the web to find authoritative, current intelligence "
             "on logistics KPIs, freight rate indices, supply chain disruptions, port "
@@ -106,7 +106,7 @@ def _build_agents():
 
     writer = Agent(
         role="Logistics Technical Writer",
-        model="gemini-1.5-flash",
+        model=use_model,
         goal=(
             "Transform raw logistics research data into a polished, structured "
             "Markdown report that is immediately usable by supply chain planners "
@@ -244,27 +244,60 @@ def run_research(query: str, output_file: str) -> str:
     """
     os.makedirs("knowledge_repo", exist_ok=True)
 
-    # FIX: agents (and therefore tools) are built lazily here, not at import time
-    logistics_analyst, technical_writer = _build_agents()
-
-    tasks = [
-        build_research_task(query, logistics_analyst),
-        build_writing_task(query, output_file, technical_writer),
+    max_retries = 4
+    base_delay = 2.0
+    models_to_try = [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash",
+        "gemini-1.0-pro",  # Fallback to older model
+        "gemini-1.0-pro"
     ]
 
-    crew = Crew(
-        agents=[logistics_analyst, technical_writer],
-        tasks=tasks,
-        process=Process.sequential,
-        verbose=True,
-        memory=False,
-    )
+    for attempt in range(max_retries + 1):
+        try:
+            current_model = models_to_try[attempt]
+            print(f"\\n[logistics_crew] Attempt {attempt + 1}/{max_retries + 1} with model {current_model}")
+            
+            # Agents and tools are built lazily here
+            logistics_analyst, technical_writer = _build_agents(current_model)
 
-    print(f"\n[logistics_crew] Kicking off crew for query: '{query}'")
-    result = crew.kickoff()
+            tasks = [
+                build_research_task(query, logistics_analyst),
+                build_writing_task(query, output_file, technical_writer),
+            ]
 
-    print(f"\n[logistics_crew] Research complete. Report: knowledge_repo/{output_file}")
-    return str(result)
+            crew = Crew(
+                agents=[logistics_analyst, technical_writer],
+                tasks=tasks,
+                process=Process.sequential,
+                verbose=True,
+                memory=False,
+            )
+
+            print(f"\\n[logistics_crew] Kicking off crew for query: '{query}'")
+            result = crew.kickoff()
+
+            print(f"\\n[logistics_crew] Research complete. Report: knowledge_repo/{output_file}")
+            return str(result)
+            
+        except Exception as e:
+            error_str = str(e)
+            is_transient = any(code in error_str for code in ["503", "429", "ServiceUnavailableError", "ResourceExhausted"])
+            
+            if is_transient:
+                if attempt < max_retries:
+                    # Exponential backoff with jitter
+                    delay = (base_delay ** attempt) + random.uniform(0, 1.5)
+                    print(f"\\n[logistics_crew] Transient error detected. Applying backoff. Retrying in {delay:.2f}s...")
+                    time.sleep(delay)
+                    continue
+                else:
+                    print(f"\\n[logistics_crew] Exhausted all retries after transient errors. Reducing request frequency failed.")
+                    raise RuntimeError("Temporary service overload: Exhausted all retries. Please try again later.") from e
+            else:
+                # Terminate on non-transient errors
+                raise e
 
 
 
