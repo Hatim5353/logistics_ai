@@ -1,0 +1,37 @@
+name: Deploy Logistics AI to AWS
+
+on:
+  push:
+    branches:
+      - main  # Runs automatically every time you push to main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH into AWS EC2 and Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AWS_HOST_IP }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            # Go into the project folder (or clone it if first time)
+            if [ ! -d "logistics_ai" ]; then
+              git clone https://github.com/Hatim5353/logistics_ai.git
+            fi
+
+            cd logistics_ai
+
+            # Pull latest code from GitHub
+            git pull origin main
+
+            # Write the .env file from GitHub Secrets (so API keys are never stored in repo)
+            echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" > .env
+            echo "SERPER_API_KEY=${{ secrets.SERPER_API_KEY }}" >> .env
+
+            # Restart Docker with latest code
+            sudo docker-compose down
+            sudo docker-compose build --no-cache
+            sudo docker-compose up -d
